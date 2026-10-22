@@ -1,0 +1,9 @@
+out/
+*.class
+biblioteca.dat
+biblioteca.dat.tmp
+.idea/
+*.iml
+nbproject/private/
+.vscode/
+.DS_Store
