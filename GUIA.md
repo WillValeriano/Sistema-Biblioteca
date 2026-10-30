@@ -1,7 +1,11 @@
 # Guía para entender el Sistema de Biblioteca desde cero
 
-Esta guía explica **qué hace cada parte del proyecto y en qué orden conviene leerlo**.
-Todos los archivos `.java` tienen además comentarios que explican el código línea por línea.
+Esta guía es un **resumen corto**: qué hace cada parte del proyecto y en qué orden conviene leerlo.
+Todos los archivos `.java` tienen además comentarios que explican el código.
+
+> ¿Nunca programaste en Java? Empezá por [`EXPLICACION_DESDE_CERO.md`](EXPLICACION_DESDE_CERO.md),
+> que enseña lo necesario de Java y recorre el proyecto completo.
+> Los cambios hechos al proyecto están explicados uno por uno en [`informes/`](informes/).
 
 ---
 
