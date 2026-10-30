@@ -1,0 +1,23 @@
+# Compilados
+*.class
+bin/
+out/
+build/
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+nbproject/private/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Datos persistidos
+*.dat
+*.ser
