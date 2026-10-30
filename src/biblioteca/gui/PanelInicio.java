@@ -1,11 +1,26 @@
 package biblioteca.gui;
 
+import biblioteca.modelo.EstadoPrestamo;
+import biblioteca.modelo.Prestamo;
 import biblioteca.servicio.Biblioteca;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
+// ¿QUÉ ES ESTE PANEL?
+// La pantalla de inicio: 4 tarjetas con números (materiales, socios, préstamos, multas)
+// y un gráfico de barras con el estado de los préstamos.
+//
+// "extends JPanel" = ES UN panel de Swing (un rectángulo donde se ponen componentes).
+// "implements Actualizable" = promete tener actualizarDatos() para refrescar los números.
+//
+// Cómo se arma una pantalla en Swing (idea general):
+//   1. Se crean paneles (JPanel) y se les elige un "layout" (cómo acomodan lo que tienen adentro).
+//      BorderLayout -> 5 zonas: NORTH, SOUTH, EAST, WEST, CENTER
+//      GridLayout   -> una grilla de celdas iguales
+//   2. Se crean los componentes (JLabel = texto, JButton = botón, etc.).
+//   3. Se agregan con panel.add(componente, zona).
 public class PanelInicio extends JPanel implements Actualizable {
 
     private Biblioteca biblioteca;
@@ -106,16 +121,22 @@ public class PanelInicio extends JPanel implements Actualizable {
         actualizarDatos();
     }
 
+    // Vuelve a contar todo en la Biblioteca y actualiza lo que se ve en pantalla.
     @Override
     public void actualizarDatos() {
         int totalMateriales = biblioteca.getCatalogo().size();
         int totalSocios = biblioteca.getSocios().size();
-        
+
+        // Contamos cuántos préstamos hay en cada estado
         int activos = 0;
         int vencidos = 0;
-        for (var p : biblioteca.getPrestamos()) {
-            if (p.getEstado().name().equals("ACTIVO")) activos++;
-            if (p.getEstado().name().equals("VENCIDO")) vencidos++;
+        for (Prestamo p : biblioteca.getPrestamos()) {
+            if (p.getEstado() == EstadoPrestamo.ACTIVO) {
+                activos++;
+            }
+            if (p.getEstado() == EstadoPrestamo.VENCIDO) {
+                vencidos++;
+            }
         }
         int totalPrestamosActivos = activos + vencidos;
 

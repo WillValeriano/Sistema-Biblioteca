@@ -1,5 +1,7 @@
 package biblioteca.modelo;
 
+// Una Tesis ES UN MaterialBibliografico (igual que Libro, ver comentarios ahí).
+// Agrega lo propio de una tesis: director, facultad y grado académico.
 public class Tesis extends MaterialBibliografico {
 
     private String directorTesis;

@@ -5,6 +5,12 @@ import biblioteca.servicio.Biblioteca;
 
 import java.time.LocalDate;
 
+// ¿PARA QUÉ SIRVE?
+// Crea una biblioteca "de mentira" ya cargada con empleados, libros, socios, préstamos y multas,
+// para que al abrir el programa por primera vez no esté vacío y se pueda mostrar todo funcionando.
+//
+// Es una buena clase para EMPEZAR A LEER el proyecto: muestra, paso a paso,
+// cómo se crean y se conectan los objetos del modelo.
 public class DatosDeEjemplo {
 
     public static Biblioteca crearBibliotecaDeEjemplo() {
@@ -91,6 +97,9 @@ public class DatosDeEjemplo {
             biblio.registrarSocio(soc5);
 
             // 5. CARGAMOS PRÉSTAMOS (Activos, Vencidos y Devueltos con Multa)
+            // Ojo: acá NO usamos biblio.realizarPrestamo(...) porque ese método siempre presta "hoy"
+            // y revisa las reglas. Para inventar préstamos del pasado creamos el Prestamo
+            // a mano con fechas elegidas y lo agregamos directo a la lista.
             LocalDate hoy = LocalDate.now();
 
             // Préstamo 1: Activo en término (Sofía se llevó Cómo programar en Java)

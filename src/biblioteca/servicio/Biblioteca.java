@@ -11,10 +11,25 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+// ¿QUÉ ES LA CLASE BIBLIOTECA?
+// Es el "CEREBRO" del sistema. Guarda TODAS las listas (libros, socios, préstamos...)
+// y tiene los métodos que aplican las REGLAS del negocio, por ejemplo:
+//   - "no se le presta a un socio con multas impagas"
+//   - "si se devuelve tarde, se genera una multa"
+//
+// La pantalla (paquete gui) NUNCA modifica las listas directamente: siempre le pide
+// a la Biblioteca que haga la operación. Si la regla no se cumple, la Biblioteca
+// lanza una OperacionInvalidaException con el motivo, y la pantalla lo muestra.
+//
+// Cómo está organizada (buscá estos títulos más abajo):
+//   1. Autores y catálogo      4. Préstamos, renovaciones y devoluciones
+//   2. Socios                  5. Reservas
+//   3. Empleados               6. Multas y comprobantes
 public class Biblioteca implements Serializable {
 
-    // COMPOSICIÓN: La configuración nace y vive dentro de la Biblioteca
+    // COMPOSICIÓN: la configuración nace y vive dentro de la Biblioteca
     private ConfiguracionBiblioteca configuracion;
+    // Cómo se calculan las multas. Arranca como "Fija Diaria" y se puede cambiar.
     private PoliticaMulta politicaMulta;
 
     // Listas principales del sistema
@@ -25,7 +40,7 @@ public class Biblioteca implements Serializable {
     private List<Prestamo> prestamos;
     private List<Multa> multas;
     private List<Reserva> reservas;
-    private List<String> historialActividad; // NUEVO: Bitácora de auditoría
+    private List<String> historialActividad; // Bitácora: qué pasó y a qué hora
 
     public Biblioteca() {
         this.configuracion = new ConfiguracionBiblioteca();
@@ -72,7 +87,11 @@ public class Biblioteca implements Serializable {
         registrarActividad("Se vació la base de datos para comenzar desde cero.");
     }
 
-    // Sincroniza los contadores estáticos cuando se carga un archivo guardado en el disco
+    // ¿POR QUÉ HACE FALTA ESTO?
+    // Los contadores "static" (que generan los números automáticos) NO se guardan en el archivo.
+    // Al abrir el programa vuelven a su valor inicial. Si no los corregimos, el próximo socio
+    // nuevo podría recibir un número que ya existe. Este método recorre lo cargado y deja cada
+    // contador en el número más alto encontrado, para que el siguiente siga desde ahí.
     public void sincronizarContadores() {
         for (Empleado e : empleados) {
             Empleado.actualizarContadorSiEsMayor(e.getLegajo());
@@ -80,13 +99,15 @@ public class Biblioteca implements Serializable {
         for (Socio s : socios) {
             Socio.actualizarContadorSiEsMayor(s.getNroSocio());
         }
+        for (Autor a : autores) {
+            Autor.actualizarContadorSiEsMayor(a.getIdAutor());
+        }
         for (MaterialBibliografico m : catalogo) {
             MaterialBibliografico.actualizarContadorSiEsMayor(m.getIdMaterial());
             for (Ejemplar ej : m.getEjemplares()) {
-                try {
-                    int num = Integer.parseInt(ej.getCodigoInventario().replace("EJ-", ""));
-                    Ejemplar.actualizarContadorSiEsMayor(num);
-                } catch (NumberFormatException ignored) {}
+                // El código es "EJ-7": le sacamos el "EJ-" y convertimos "7" en el número 7
+                int numero = Integer.parseInt(ej.getCodigoInventario().replace("EJ-", ""));
+                Ejemplar.actualizarContadorSiEsMayor(numero);
             }
         }
         for (Prestamo p : prestamos) {
@@ -95,9 +116,15 @@ public class Biblioteca implements Serializable {
         for (Multa mu : multas) {
             Multa.actualizarContadorSiEsMayor(mu.getIdMulta());
         }
+        for (Reserva r : reservas) {
+            Reserva.actualizarContadorSiEsMayor(r.getIdReserva());
+        }
     }
 
     // --- 1. GESTIÓN DE AUTORES Y CATÁLOGO ---
+
+    // Si ya existe un autor con ese nombre lo devuelve; si no, lo crea.
+    // Así no quedan autores repetidos.
     public Autor buscarOCrearAutor(String nombreCompleto, String nacionalidad) {
         for (Autor a : autores) {
             if (a.getNombreCompleto().equalsIgnoreCase(nombreCompleto.trim())) {
@@ -114,6 +141,8 @@ public class Biblioteca implements Serializable {
         registrarActividad("Alta de material: " + material.getTitulo() + " (" + material.getTipoMaterial() + ")");
     }
 
+    // REGLA: no se puede borrar un material si alguna de sus copias está prestada.
+    // "throws OperacionInvalidaException" avisa que este método puede lanzar ese error.
     public void eliminarMaterial(MaterialBibliografico material) throws OperacionInvalidaException {
         for (Ejemplar ej : material.getEjemplares()) {
             if (ej.getEstado() == EstadoEjemplar.PRESTADO) {
@@ -125,6 +154,8 @@ public class Biblioteca implements Serializable {
     }
 
     // --- 2. GESTIÓN DE SOCIOS ---
+
+    // REGLA: no puede haber dos socios con el mismo DNI.
     public void registrarSocio(Socio nuevoSocio) throws OperacionInvalidaException {
         for (Socio s : socios) {
             if (s.getDni().equalsIgnoreCase(nuevoSocio.getDni().trim())) {
@@ -135,6 +166,7 @@ public class Biblioteca implements Serializable {
         registrarActividad("Nuevo socio registrado: " + nuevoSocio.getNombre() + " (Socio #" + nuevoSocio.getNroSocio() + ")");
     }
 
+    // REGLA: un socio solo se puede dar de baja si no debe libros ni multas.
     public void eliminarSocio(Socio socio) throws OperacionInvalidaException {
         if (contarPrestamosActivosDeSocio(socio) > 0) {
             throw new OperacionInvalidaException("El socio tiene préstamos activos sin devolver. No puede darse de baja.");
@@ -147,6 +179,8 @@ public class Biblioteca implements Serializable {
     }
 
     // --- 3. GESTIÓN DE EMPLEADOS ---
+
+    // REGLA: no puede haber dos empleados con el mismo DNI.
     public void registrarEmpleado(Empleado nuevoEmpleado) throws OperacionInvalidaException {
         for (Empleado e : empleados) {
             if (e.getDni().equalsIgnoreCase(nuevoEmpleado.getDni().trim())) {
@@ -163,6 +197,8 @@ public class Biblioteca implements Serializable {
     }
 
     // --- 4. GESTIÓN DE PRÉSTAMOS, RENOVACIONES Y DEVOLUCIONES ---
+
+    // Cuántos materiales tiene el socio en su poder ahora (activos + vencidos sin devolver)
     public int contarPrestamosActivosDeSocio(Socio socio) {
         int contador = 0;
         for (Prestamo p : prestamos) {
@@ -182,32 +218,43 @@ public class Biblioteca implements Serializable {
         return false;
     }
 
+    // LA OPERACIÓN MÁS IMPORTANTE DEL SISTEMA.
+    // Antes de prestar revisa 4 reglas, en orden. Si alguna falla, lanza la excepción y el
+    // método TERMINA ahí (no se crea ningún préstamo):
+    //   1. El socio tiene que estar activo.
+    //   2. No puede tener multas sin pagar.
+    //   3. No puede superar su límite de materiales (depende del tipo de socio).
+    //   4. Tiene que quedar al menos una copia disponible.
+    // Si pasa todas, crea el Préstamo y lo agrega a la lista.
     public Prestamo realizarPrestamo(Socio socio, MaterialBibliografico material, Empleado empleado) throws OperacionInvalidaException {
+        // Regla 1
         if (!socio.isActivo()) {
             throw new OperacionInvalidaException("El socio " + socio.getNombre() + " se encuentra suspendido/inactivo.");
         }
+        // Regla 2
         if (tieneMultasPendientes(socio)) {
             throw new OperacionInvalidaException("El socio tiene multas pendientes de pago. Debe regularizar su situación en la pestaña Multas.");
         }
+        // Regla 3 (polimorfismo: cada tipo de socio responde su propio límite)
         int prestamosActuales = contarPrestamosActivosDeSocio(socio);
         int limiteMaximo = socio.getCantidadMaximaLibros(configuracion);
         if (prestamosActuales >= limiteMaximo) {
             throw new OperacionInvalidaException("El socio ya alcanzó su límite máximo permitido (" + limiteMaximo + " materiales para " + socio.getTipoSocio() + ").");
         }
-
+        // Regla 4
         Ejemplar ejemplarLibre = material.obtenerPrimerEjemplarDisponible();
         if (ejemplarLibre == null) {
             throw new OperacionInvalidaException("No hay ejemplares disponibles de '" + material.getTitulo() + "'. Podés registrar una Reserva para este socio.");
         }
 
+        // Todo OK: creamos el préstamo con los días que le corresponden a este tipo de socio
         int diasCorrespondientes = socio.getDiasMaximoPrestamo(configuracion);
         Prestamo nuevoPrestamo = new Prestamo(socio, ejemplarLibre, empleado, diasCorrespondientes);
         prestamos.add(nuevoPrestamo);
 
-        // Si el socio tenía una reserva activa para este libro, la marcamos como cumplida
+        // Si el socio estaba en lista de espera por este material, su reserva ya se cumplió
         for (Reserva r : reservas) {
-            if (r.isActiva() && r.getSocio().getNroSocio() == socio.getNroSocio()
-                    && r.getMaterial().getIdMaterial() == material.getIdMaterial()) {
+            if (r.esActivaDe(socio, material)) {
                 r.marcarComoCumplida();
             }
         }
@@ -216,7 +263,9 @@ public class Biblioteca implements Serializable {
         return nuevoPrestamo;
     }
 
-    // Devuelve una Multa si hubo atraso, o null si devolvió en término
+    // Registra que el socio devolvió el material.
+    // Si lo devolvió tarde, genera una Multa y la devuelve; si lo devolvió a tiempo, devuelve null.
+    // El monto lo calcula la politicaMulta actual (Fija o Progresiva), sin que acá importe cuál es.
     public Multa registrarDevolucion(Prestamo prestamo) throws OperacionInvalidaException {
         if (prestamo.getEstado() == EstadoPrestamo.DEVUELTO) {
             throw new OperacionInvalidaException("Este préstamo ya fue devuelto anteriormente.");
@@ -238,6 +287,8 @@ public class Biblioteca implements Serializable {
         return multaGenerada;
     }
 
+    // Extiende el plazo de un préstamo. REGLAS: no puede estar devuelto ni vencido,
+    // el socio no puede tener multas y se puede renovar como máximo 2 veces.
     public void renovarPrestamo(Prestamo prestamo) throws OperacionInvalidaException {
         if (prestamo.getEstado() == EstadoPrestamo.DEVUELTO) {
             throw new OperacionInvalidaException("No se puede renovar un préstamo que ya fue devuelto.");
@@ -258,13 +309,15 @@ public class Biblioteca implements Serializable {
     }
 
     // --- 5. GESTIÓN DE RESERVAS ---
+
+    // Anota al socio en la lista de espera de un material.
+    // REGLAS: solo si no quedan copias disponibles, y sin reservas repetidas.
     public Reserva registrarReserva(Socio socio, MaterialBibliografico material) throws OperacionInvalidaException {
         if (material.getCantidadDisponibles() > 0) {
             throw new OperacionInvalidaException("El material tiene ejemplares disponibles actualmente. Puede realizar el préstamo directamente.");
         }
         for (Reserva r : reservas) {
-            if (r.isActiva() && r.getSocio().getNroSocio() == socio.getNroSocio()
-                    && r.getMaterial().getIdMaterial() == material.getIdMaterial()) {
+            if (r.esActivaDe(socio, material)) {
                 throw new OperacionInvalidaException("El socio ya tiene una reserva activa para este material.");
             }
         }
@@ -313,11 +366,14 @@ public class Biblioteca implements Serializable {
         return suma;
     }
 
-    // NUEVO: Genera el texto de un comprobante listo para mostrar o guardar en archivo .txt
+    // Arma el texto del "ticket" de un préstamo, listo para mostrar o guardar en un .txt
     public String generarComprobantePrestamo(Prestamo p) {
-        String atendidoPor = (p.getEmpleadoResponsable() != null)
-                ? p.getEmpleadoResponsable().getNombre() + " (Leg. #" + p.getEmpleadoResponsable().getLegajo() + ")"
-                : "Administración General";
+        String atendidoPor;
+        if (p.getEmpleadoResponsable() != null) {
+            atendidoPor = p.getEmpleadoResponsable().getNombre() + " (Leg. #" + p.getEmpleadoResponsable().getLegajo() + ")";
+        } else {
+            atendidoPor = "Administración General";
+        }
 
         return "================================================\n" +
                "       SISTEMA DE GESTIÓN DE BIBLIOTECA         \n" +

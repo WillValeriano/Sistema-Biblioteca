@@ -1,5 +1,7 @@
 package biblioteca.modelo;
 
+// Una Revista ES UN MaterialBibliografico (igual que Libro, ver comentarios ahí).
+// Agrega lo propio de una revista: ISSN, número de edición y periodicidad.
 public class Revista extends MaterialBibliografico {
 
     private String issn;

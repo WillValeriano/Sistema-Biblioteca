@@ -10,6 +10,13 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 
+// ¿QUÉ ES ESTA CLASE?
+// Una "caja de herramientas" visual. Junta en un solo lugar los colores, las fuentes y
+// métodos para crear botones/campos/tablas con el mismo aspecto en todas las pantallas.
+// Si querés cambiar el color principal de TODO el programa, lo cambiás solo acá.
+//
+// Todo es "static": se usa directamente, ej: Estilo.COLOR_PRIMARIO o Estilo.crearBotonPrimario("Guardar").
+// "final" en los colores = son constantes, no se pueden modificar después.
 public class Estilo {
 
     // --- PALETA DE COLORES MODERNA ---
@@ -79,7 +86,8 @@ public class Estilo {
     }
 
     // --- ESTILIZADOR DE TABLAS CON ETIQUETAS DE COLOR AUTOMÁTICAS ---
-    // (Reemplaza a RenderizadorCelda.java y RenderizadorEncabezado.java del zip original)
+    // Le da formato a una JTable y pinta de color las celdas según su texto:
+    // verde = bien (Disponible, Activo, Pagada), rojo = problema (Vencido, Pendiente), etc.
     public static void estilizarTabla(JTable tabla) {
         tabla.setFont(FUENTE_NORMAL);
         tabla.setRowHeight(34);
@@ -97,7 +105,9 @@ public class Estilo {
         header.setPreferredSize(new Dimension(header.getWidth(), 38));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, COLOR_BORDE));
 
-        // Renderizador que pinta celdas de estado con colores suaves
+        // Un "renderizador" decide CÓMO se dibuja cada celda de la tabla.
+        // "new DefaultTableCellRenderer() { ... }" es una CLASE ANÓNIMA: creamos una clase hija
+        // sin nombre, en el momento, solo para cambiarle un método (getTableCellRendererComponent).
         DefaultTableCellRenderer renderizador = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value,
@@ -138,13 +148,13 @@ public class Estilo {
         }
     }
 
-    // --- FORMATEADOR DE MONEDA (Reemplaza a Moneda.java) ---
+    // --- FORMATEADOR DE MONEDA: convierte 3000.0 en "$ 3.000,00" (formato argentino) ---
     public static String formatearMoneda(double monto) {
         NumberFormat formato = NumberFormat.getCurrencyInstance(new Locale("es", "AR"));
         return formato.format(monto);
     }
 
-    // --- CARTELES EMERGENTES (Reemplaza a Mensajes.java) ---
+    // --- CARTELES EMERGENTES (ventanitas de aviso, error y confirmación Sí/No) ---
     public static void mostrarInfo(Component padre, String mensaje) {
         JOptionPane.showMessageDialog(padre, mensaje, "Información del Sistema", JOptionPane.INFORMATION_MESSAGE);
     }
@@ -161,7 +171,8 @@ public class Estilo {
         return respuesta == JOptionPane.YES_OPTION;
     }
 
-    // --- NUEVO: CARGADOR Y GENERADOR DE PORTADAS DE LIBROS ---
+    // --- CARGADOR Y GENERADOR DE PORTADAS DE LIBROS ---
+    // Si el material tiene una foto, la usa; si no, DIBUJA una tapa azul con el título.
     public static ImageIcon crearIconoPortada(String rutaImagen, String titulo, int ancho, int alto) {
         // 1. Si el usuario cargó una foto real desde su PC y el archivo existe, la escalamos:
         if (rutaImagen != null && !rutaImagen.trim().isEmpty()) {

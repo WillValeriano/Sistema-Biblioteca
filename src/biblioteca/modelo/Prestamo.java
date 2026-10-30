@@ -4,38 +4,39 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-// Asocia un Socio, un Ejemplar físico y el Empleado que registró la operación
+// ¿QUÉ ES UN PRÉSTAMO?
+// Es el registro de que un Socio se llevó un Ejemplar (una copia física),
+// quién lo atendió (Empleado) y las fechas: cuándo se lo llevó, cuándo vence y cuándo lo devolvió.
+//
+// Fijate que NO guarda el estado (Activo/Vencido/Devuelto) en una variable:
+// lo CALCULA cada vez en getEstado() a partir de las fechas. Así nunca queda desactualizado.
 public class Prestamo implements Serializable {
 
-    private static int contadorPrestamos = 1;
+    // Contador compartido: el primer préstamo será el #1, el segundo el #2...
+    private static int contadorPrestamos = 0;
 
     private int idPrestamo;
     private Socio socio;
     private Ejemplar ejemplar;
-    private Empleado empleadoResponsable; // NUEVO: registra qué empleado hizo el préstamo
+    private Empleado empleadoResponsable;  // Qué empleado registró el préstamo
     private LocalDate fechaPrestamo;
     private LocalDate fechaVencimiento;
     private LocalDate fechaDevolucionReal; // Queda en null hasta que el socio devuelve el libro
-    private int cantidadRenovaciones;      // NUEVO: cuenta cuántas veces se renovó
+    private int cantidadRenovaciones;      // Cuántas veces se extendió el plazo
 
+    // CONSTRUCTOR 1 (el que se usa normalmente): el préstamo empieza HOY
+    // y vence dentro de "diasPrestamo" días.
+    // "this(...)" llama al CONSTRUCTOR 2 de abajo, así no repetimos el mismo código dos veces.
     public Prestamo(Socio socio, Ejemplar ejemplar, Empleado empleadoResponsable, int diasPrestamo) {
-        this.idPrestamo = contadorPrestamos++;
-        this.socio = socio;
-        this.ejemplar = ejemplar;
-        this.empleadoResponsable = empleadoResponsable;
-        this.fechaPrestamo = LocalDate.now(); // Toma la fecha de hoy automáticamente
-        this.fechaVencimiento = this.fechaPrestamo.plusDays(diasPrestamo); // Suma los días según el tipo de socio
-        this.fechaDevolucionReal = null;
-        this.cantidadRenovaciones = 0;
-
-        // Cambia el estado del ejemplar a PRESTADO
-        this.ejemplar.prestar();
+        this(socio, ejemplar, empleadoResponsable, LocalDate.now(), LocalDate.now().plusDays(diasPrestamo));
     }
 
-    // Constructor adicional para poder cargar préstamos con fechas pasadas en los Datos de Ejemplo
-    public Prestamo(Socio socio, Ejemplar ejemplar, Empleado empleadoResponsable, 
+    // CONSTRUCTOR 2: permite elegir las fechas a mano.
+    // Lo usan los Datos de Ejemplo para crear préstamos "del pasado" (vencidos, devueltos, etc.).
+    public Prestamo(Socio socio, Ejemplar ejemplar, Empleado empleadoResponsable,
                     LocalDate fechaPrestamo, LocalDate fechaVencimiento) {
-        this.idPrestamo = contadorPrestamos++;
+        contadorPrestamos++;
+        this.idPrestamo = contadorPrestamos;
         this.socio = socio;
         this.ejemplar = ejemplar;
         this.empleadoResponsable = empleadoResponsable;
@@ -43,11 +44,13 @@ public class Prestamo implements Serializable {
         this.fechaVencimiento = fechaVencimiento;
         this.fechaDevolucionReal = null;
         this.cantidadRenovaciones = 0;
+
+        // La copia física pasa a estado PRESTADO
         this.ejemplar.prestar();
     }
 
     public static void reiniciarContador() {
-        contadorPrestamos = 1;
+        contadorPrestamos = 0;
     }
 
     public static void actualizarContadorSiEsMayor(int idExistente) {
@@ -56,7 +59,10 @@ public class Prestamo implements Serializable {
         }
     }
 
-    // Calcula en tiempo real si está ACTIVO, DEVUELTO o VENCIDO
+    // Calcula en el momento si está ACTIVO, DEVUELTO o VENCIDO:
+    //  - Si tiene fecha de devolución  -> DEVUELTO
+    //  - Si hoy ya pasó el vencimiento -> VENCIDO
+    //  - Si no                         -> ACTIVO
     public EstadoPrestamo getEstado() {
         if (fechaDevolucionReal != null) {
             return EstadoPrestamo.DEVUELTO;
@@ -73,22 +79,30 @@ public class Prestamo implements Serializable {
         this.ejemplar.devolver(); // Libera la copia física a DISPONIBLE
     }
 
-    // NUEVO: Permite renovar el préstamo sumando más días al vencimiento
+    // Renueva el préstamo sumando más días al vencimiento
     public void renovarPrestamo(int diasExtra) {
         this.fechaVencimiento = this.fechaVencimiento.plusDays(diasExtra);
         this.cantidadRenovaciones++;
     }
 
-    // NUEVO: Para tu defensa oral, permite simular que el préstamo venció hace "X" días
+    // Para la defensa oral: simula que el préstamo venció hace "diasAtraso" días
     public void simularAtraso(int diasAtraso) {
         this.fechaPrestamo = LocalDate.now().minusDays(diasAtraso + 7);
         this.fechaVencimiento = LocalDate.now().minusDays(diasAtraso);
     }
 
-    // Calcula cuántos días de atraso lleva (0 si está en término)
+    // Calcula cuántos días de atraso lleva (0 si está en término).
+    // Si ya lo devolvió, cuenta hasta el día de la devolución; si no, hasta hoy.
     public long getDiasAtraso() {
-        LocalDate fechaReferencia = (fechaDevolucionReal != null) ? fechaDevolucionReal : LocalDate.now();
+        LocalDate fechaReferencia;
+        if (fechaDevolucionReal != null) {
+            fechaReferencia = fechaDevolucionReal;
+        } else {
+            fechaReferencia = LocalDate.now();
+        }
+
         if (fechaReferencia.isAfter(fechaVencimiento)) {
+            // ChronoUnit.DAYS.between(a, b) = cuántos días hay entre la fecha a y la fecha b
             return ChronoUnit.DAYS.between(fechaVencimiento, fechaReferencia);
         }
         return 0;

@@ -1,5 +1,8 @@
 package biblioteca.modelo;
 
+// Un Libro ES UN MaterialBibliografico (herencia con "extends").
+// Hereda título, autor, año, ejemplares, etc. y solo agrega lo propio de un libro:
+// ISBN, editorial y cantidad de páginas.
 public class Libro extends MaterialBibliografico {
 
     private String isbn;
@@ -9,12 +12,15 @@ public class Libro extends MaterialBibliografico {
     public Libro(String titulo, Autor autor, int anioPublicacion, String genero,
                  String ubicacionEstanteria, String sinopsis, String rutaImagen,
                  int cantidadEjemplares, String isbn, String editorial, int numeroPaginas) {
+        // "super(...)" llama al constructor de la clase padre (MaterialBibliografico)
+        // para que cargue los datos comunes. Siempre tiene que ser la primera línea.
         super(titulo, autor, anioPublicacion, genero, ubicacionEstanteria, sinopsis, rutaImagen, cantidadEjemplares);
         this.isbn = isbn;
         this.editorial = editorial;
         this.numeroPaginas = numeroPaginas;
     }
 
+    // "@Override" = "estoy escribiendo mi versión de un método que viene de la clase padre".
     @Override
     public String getTipoMaterial() {
         return "Libro";

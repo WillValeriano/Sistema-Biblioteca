@@ -8,12 +8,25 @@ import biblioteca.servicio.Biblioteca;
 
 import java.io.*;
 
+// ¿QUÉ HACE ESTA CLASE?
+// "Persistencia" = que los datos sigan existiendo después de cerrar el programa.
+// Sin esto, todo lo que cargues se pierde al salir, porque los objetos viven en la memoria RAM.
+//
+// ¿CÓMO LO HACE? Con SERIALIZACIÓN:
+//   - Guardar: ObjectOutputStream convierte el objeto Biblioteca (¡con TODO lo que tiene adentro:
+//     listas, socios, libros, préstamos...!) en bytes y los escribe en un archivo.
+//   - Cargar:  ObjectInputStream lee esos bytes y reconstruye los mismos objetos.
+// Por eso todas las clases del modelo tienen "implements Serializable": si una no lo tuviera,
+// Java no podría guardarla y daría error.
+//
+// Todos los métodos son "static": se usan sin crear un objeto, ej: GestorPersistencia.guardar(biblio);
 public class GestorPersistencia {
 
-    // Nombre del archivo donde se guardan automáticamente todos los datos en tu carpeta del proyecto
+    // Nombre del archivo donde se guardan los datos (queda en la carpeta desde donde se ejecuta)
     private static final String ARCHIVO_DATOS = "biblioteca_datos.dat";
 
-    // Guarda todo el objeto Biblioteca en el disco duro
+    // Guarda todo el objeto Biblioteca en el disco.
+    // "try ( ... )" se llama try-with-resources: cierra el archivo solo al terminar, aunque haya error.
     public static void guardar(Biblioteca biblioteca) {
         try (ObjectOutputStream salida = new ObjectOutputStream(new FileOutputStream(ARCHIVO_DATOS))) {
             salida.writeObject(biblioteca);
@@ -27,10 +40,14 @@ public class GestorPersistencia {
         File archivo = new File(ARCHIVO_DATOS);
         if (archivo.exists()) {
             try (ObjectInputStream entrada = new ObjectInputStream(new FileInputStream(archivo))) {
+                // readObject() devuelve un Object genérico; con "(Biblioteca)" le decimos a Java
+                // qué tipo de objeto es en realidad (esto se llama "casteo").
                 Biblioteca biblioCargada = (Biblioteca) entrada.readObject();
                 biblioCargada.sincronizarContadores(); // Asegura que los números automáticos sigan desde el último
                 return biblioCargada;
             } catch (Exception e) {
+                // Pasa, por ejemplo, si el archivo lo guardó una versión vieja del programa
+                // cuyas clases tenían otros atributos.
                 System.err.println("El archivo guardado era de una versión anterior. Se cargarán datos de ejemplo.");
             }
         }
@@ -55,7 +72,9 @@ public class GestorPersistencia {
         guardar(bibliotecaActual);
     }
 
-    // --- NUEVO: EXPORTAR COMPROBANTES (.TXT) Y REPORTES PARA EXCEL (.CSV) ---
+    // --- EXPORTAR COMPROBANTES (.TXT) Y REPORTES PARA EXCEL (.CSV) ---
+    // A diferencia de guardar(), esto escribe TEXTO que una persona puede leer
+    // (o abrir en Excel). Un CSV es texto con columnas separadas por ";".
 
     // Guarda un texto (como el ticket de préstamo) en un archivo .txt elegido por el usuario
     public static void guardarTextoEnArchivo(File archivoDestino, String contenido) throws IOException {
@@ -93,7 +112,10 @@ public class GestorPersistencia {
             pw.println("--- HISTORIAL DE PRESTAMOS ---");
             pw.println("ID Prestamo;Socio;Material;Ejemplar;Atendido Por;Fecha Prestamo;Vencimiento;Estado");
             for (Prestamo p : biblioteca.getPrestamos()) {
-                String emp = (p.getEmpleadoResponsable() != null) ? p.getEmpleadoResponsable().getNombre() : "Sistema";
+                String emp = "Sistema";
+                if (p.getEmpleadoResponsable() != null) {
+                    emp = p.getEmpleadoResponsable().getNombre();
+                }
                 pw.println(p.getIdPrestamo() + ";" + p.getSocio().getNombre() + ";"
                         + p.getEjemplar().getMaterial().getTitulo() + ";" + p.getEjemplar().getCodigoInventario() + ";"
                         + emp + ";" + p.getFechaPrestamo() + ";" + p.getFechaVencimiento() + ";"

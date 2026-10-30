@@ -6,10 +6,17 @@ import java.util.Map;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-// Dibuja un gráfico de barras horizontales para el Panel de Inicio
+// Dibuja un gráfico de barras horizontales para el Panel de Inicio.
+//
+// No usa ninguna librería: dibuja a mano rectángulos y textos.
+// En Swing, para dibujar a mano se SOBRESCRIBE el método paintComponent(Graphics g).
+// Java lo llama solo cada vez que hay que (re)dibujar el panel; nosotros pedimos
+// que lo vuelva a llamar con repaint().
 public class GraficoBarras extends JPanel {
 
     private String titulo;
+    // Un Map guarda pares "clave -> valor". Ej: "Vencidos" -> 3
+    // LinkedHashMap recuerda el orden en que se agregaron (así las barras salen en orden).
     private Map<String, Integer> datos;
     private Map<String, Color> colores;
 
@@ -80,7 +87,8 @@ public class GraficoBarras extends JPanel {
             g2.setColor(new Color(241, 245, 249));
             g2.fillRoundRect(xBarra, y, anchoMaximoBarra, 22, 8, 8);
 
-            // Barra rellena proporcional
+            // Barra rellena proporcional: regla de tres.
+            // Si el valor más grande ocupa todo el ancho, este valor ocupa (valor / maxValor) del ancho.
             int anchoRelleno = (int) ((valor / (double) maxValor) * anchoMaximoBarra);
             if (valor > 0 && anchoRelleno < 10) {
                 anchoRelleno = 10;

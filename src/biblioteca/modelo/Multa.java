@@ -3,21 +3,27 @@ package biblioteca.modelo;
 import java.io.Serializable;
 import java.time.LocalDate;
 
+// ¿QUÉ ES UNA MULTA?
+// Se genera cuando un socio devuelve un ejemplar DESPUÉS de la fecha de vencimiento.
+// El monto NO lo calcula esta clase: lo calcula la PoliticaMulta elegida (ver paquete "multas")
+// y se lo pasamos ya calculado en el constructor.
 public class Multa implements Serializable {
 
-    private static int contadorMultas = 1;
+    // Contador compartido: la primera multa será la #1, la segunda la #2...
+    private static int contadorMultas = 0;
 
     private int idMulta;
-    private Prestamo prestamoAsociado;
-    private Socio socio;
+    private Prestamo prestamoAsociado; // El préstamo que se devolvió tarde
+    private Socio socio;               // Quién debe pagarla
     private long diasAtraso;
     private double montoTotal;
     private LocalDate fechaGeneracion;
-    private LocalDate fechaPago;
+    private LocalDate fechaPago;       // null mientras no se pague
     private boolean pagada;
 
     public Multa(Prestamo prestamoAsociado, long diasAtraso, double montoTotal) {
-        this.idMulta = contadorMultas++;
+        contadorMultas++;
+        this.idMulta = contadorMultas;
         this.prestamoAsociado = prestamoAsociado;
         this.socio = prestamoAsociado.getSocio();
         this.diasAtraso = diasAtraso;
@@ -28,7 +34,7 @@ public class Multa implements Serializable {
     }
 
     public static void reiniciarContador() {
-        contadorMultas = 1;
+        contadorMultas = 0;
     }
 
     public static void actualizarContadorSiEsMayor(int idExistente) {

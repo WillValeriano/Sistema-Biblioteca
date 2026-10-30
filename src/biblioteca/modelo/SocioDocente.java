@@ -1,5 +1,7 @@
 package biblioteca.modelo;
 
+// Un SocioDocente ES UN Socio. Igual que SocioEstudiante (ver comentarios ahí),
+// pero con los límites de docente y con un departamento en vez de carrera.
 public class SocioDocente extends Socio {
 
     private String departamento;

@@ -2,6 +2,9 @@ package biblioteca.multas;
 
 import biblioteca.modelo.ConfiguracionBiblioteca;
 
+// Forma de calcular la multa: los primeros 5 días se cobran normal,
+// y desde el 6° día cada día cuesta un 50% más (x 1.5). También tiene tope máximo.
+// Ejemplo con $500/día:  8 días -> (5 x 500) + (3 x 500 x 1.5) = 2.500 + 2.250 = $4.750
 public class MultaProgresiva implements PoliticaMulta {
 
     @Override

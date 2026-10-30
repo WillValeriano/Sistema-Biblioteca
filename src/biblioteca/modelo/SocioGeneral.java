@@ -1,5 +1,7 @@
 package biblioteca.modelo;
 
+// Un SocioGeneral ES UN Socio. Igual que SocioEstudiante (ver comentarios ahí),
+// pero con los límites de socio general y con una ocupación en vez de carrera.
 public class SocioGeneral extends Socio {
 
     private String ocupacion;

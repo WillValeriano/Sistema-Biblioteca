@@ -2,6 +2,8 @@ package biblioteca.multas;
 
 import biblioteca.modelo.ConfiguracionBiblioteca;
 
+// Forma de calcular la multa: días de atraso x precio por día, con un tope máximo.
+// Ejemplo con $500/día y tope $15.000:  6 días -> 6 x 500 = $3.000
 public class MultaFijaDiaria implements PoliticaMulta {
 
     @Override

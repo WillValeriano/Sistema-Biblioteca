@@ -4,9 +4,16 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-// Clase abstracta base para Libro, Revista y Tesis
+// ¿QUÉ ES UN MATERIAL BIBLIOGRÁFICO?
+// Es la OBRA en sí (el título, el autor, el año...), no una copia física.
+// Las copias físicas son los Ejemplares que viven en la lista "ejemplares".
+//
+// Es "abstract": no se puede hacer "new MaterialBibliografico(...)".
+// Siempre se crea un tipo concreto: Libro, Revista o Tesis (HERENCIA).
+// Todo lo que tienen en común está acá; lo que cambia está en cada clase hija.
 public abstract class MaterialBibliografico implements Serializable {
 
+    // Contador compartido: arranca en 100, así el primer material será el #101
     private static int contadorMateriales = 100;
 
     protected int idMaterial;
@@ -51,7 +58,10 @@ public abstract class MaterialBibliografico implements Serializable {
         }
     }
 
-    // Métodos polimórficos que cada clase hija (Libro, Revista, Tesis) responderá a su manera
+    // POLIMORFISMO: métodos "abstract" = sin código acá.
+    // Cada clase hija (Libro, Revista, Tesis) está OBLIGADA a escribirlos a su manera.
+    // Ej: material.getTipoMaterial() devuelve "Libro", "Revista" o "Tesis"
+    // según qué objeto sea en realidad, sin que tengamos que preguntar con un if.
     public abstract String getTipoMaterial();
     public abstract String getIdentificadorUnico(); // Mostrará el ISBN, el ISSN o el Área Académica
 
@@ -62,7 +72,8 @@ public abstract class MaterialBibliografico implements Serializable {
         return nuevo;
     }
 
-    // Cuenta cuántos ejemplares están DISPONIBLES usando un ciclo "for" clásico y fácil de explicar
+    // Cuenta cuántas copias están DISPONIBLES.
+    // "for (Ejemplar ej : ejemplares)" se lee: "para cada ejemplar ej de la lista ejemplares..."
     public int getCantidadDisponibles() {
         int contador = 0;
         for (Ejemplar ej : ejemplares) {
